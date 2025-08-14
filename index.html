@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Defines the root for the React application -->
+  <title>Missouri State Alt Text Generator</title>
+  
+  <!--
+    The manifest.json file links to your app's metadata, icons, and theme colors.
+    It's what allows the browser to present the app as installable on desktop or mobile.
+  -->
+  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+  
+  <!--
+    The service-worker.js file is a script that runs in the background.
+    It's responsible for caching assets, enabling offline functionality, and handling
+    other PWA features like push notifications.
+  -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(registration => {
+            console.log('Service Worker registered with scope:', registration.scope);
+          })
+          .catch(err => {
+            console.log('Service Worker registration failed:', err);
+          });
+      });
+    }
+  </script>
+</head>
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+</body>
+</html>
