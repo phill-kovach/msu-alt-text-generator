@@ -3,20 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Defines the root for the React application -->
   <title>Missouri State Alt Text Generator</title>
   
-  <!--
-    The manifest.json file links to your app's metadata, icons, and theme colors.
-    It's what allows the browser to present the app as installable on desktop or mobile.
-  -->
-  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+  <!-- The manifest.json links to the app's PWA settings and icons -->
+  <link rel="manifest" href="/manifest.json" />
   
-  <!--
-    The service-worker.js file is a script that runs in the background.
-    It's responsible for caching assets, enabling offline functionality, and handling
-    other PWA features like push notifications.
-  -->
+  <!-- The service worker enables offline functionality -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -30,9 +22,283 @@
       });
     }
   </script>
+
+  <!-- Tailwind CSS and React/ReactDOM from CDN for simplicity -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
 </head>
-<body>
-  <noscript>You need to enable JavaScript to run this app.</noscript>
+<body class="bg-[#5E0009]">
   <div id="root"></div>
+
+  <!-- The script tag below contains the entire React application logic.
+       The "text/babel" type tells the browser to use the Babel library to
+       transpile the JSX code into regular JavaScript that the browser can understand.
+  -->
+  <script type="text/babel">
+    const { useState } = React;
+    const ClipboardIcon = () => (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+      </svg>
+    );
+
+    const App = () => {
+      const [image, setImage] = useState(null);
+      const [altText, setAltText] = useState('');
+      const [isLoading, setIsLoading] = useState(false);
+      const [isDragging, setIsDragging] = useState(false);
+      const [message, setMessage] = useState('');
+
+      const handleDrop = (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files[0];
+        if (file) {
+          if (!file.type.startsWith('image/')) {
+            setMessage('Please drop a valid image file.');
+            return;
+          }
+          handleFile(file);
+        }
+      };
+
+      const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          handleFile(file);
+        }
+      };
+
+      const handleFile = (file) => {
+        setAltText('');
+        setMessage('');
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64Data = reader.result.split(',')[1];
+          setImage(reader.result);
+          generateAltText(base64Data, file.type);
+        };
+        reader.onerror = () => {
+          setMessage('Error reading file. Please try again.');
+        };
+        reader.readAsDataURL(file);
+      };
+
+      const generateAltText = async (base64Data, mimeType) => {
+        setIsLoading(true);
+        setMessage('Analyzing image...');
+
+        try {
+          const prompt = "Describe this image in a concise and detailed manner for alt text purposes. Focus on key visual elements, colors, and the subject matter. Start directly with the description without any introductory phrases like 'The image shows...'";
+          const payload = {
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  { text: prompt },
+                  {
+                    inlineData: {
+                      mimeType: mimeType,
+                      data: base64Data
+                    }
+                  }
+                ]
+              }
+            ],
+          };
+
+          const apiKey = "";
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+          let response = null;
+          let delay = 1000;
+          const maxRetries = 5;
+          let retries = 0;
+
+          while (retries < maxRetries) {
+            try {
+              response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+
+              if (response.status === 429) {
+                await new Promise(resolve => setTimeout(resolve, delay));
+                delay *= 2;
+                retries++;
+                continue;
+              }
+
+              if (!response.ok) {
+                throw new Error(`API error: ${response.status} ${response.statusText}`);
+              }
+              break;
+            } catch (error) {
+              retries++;
+              if (retries >= maxRetries) {
+                throw error;
+              }
+              await new Promise(resolve => setTimeout(resolve, delay));
+              delay *= 2;
+            }
+          }
+
+          if (!response) {
+            throw new Error('Failed to fetch from API after multiple retries.');
+          }
+
+          const result = await response.json();
+          const generatedText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+          if (generatedText) {
+            setAltText(generatedText);
+            setMessage('Alt text generated successfully!');
+          } else {
+            setMessage('Could not generate alt text. Please try a different image.');
+          }
+        } catch (error) {
+          console.error('Error generating alt text:', error);
+          setMessage('An error occurred. Please check the console for details.');
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const copyToClipboard = () => {
+        if (altText) {
+          const tempInput = document.createElement('input');
+          tempInput.value = altText;
+          document.body.appendChild(tempInput);
+          tempInput.select();
+          document.execCommand('copy');
+          document.body.removeChild(tempInput);
+          setMessage('Alt text copied to clipboard!');
+        }
+      };
+
+      const handleReset = () => {
+        setImage(null);
+        setAltText('');
+        setMessage('');
+        setIsDragging(false);
+        setIsLoading(false);
+      };
+
+      return (
+        <div className="min-h-screen bg-[#5E0009] flex flex-col items-center p-4 font-sans text-gray-100">
+          <div className="w-full max-w-2xl bg-white p-8 rounded-2xl shadow-xl border border-gray-200">
+            <div className="flex flex-col items-center mb-6">
+              <img
+                src="https://marvel-b1-cdn.bc0a.com/f00000000271534/brand.missouristate.edu/_Files/logos-m.png"
+                alt="Missouri State University Bear Head logo and wordmark"
+                className="mb-4"
+              />
+              <h1 className="text-3xl md:text-4xl font-extrabold text-[#5E0009] text-center">
+                Missouri State Alt Text Generator
+              </h1>
+            </div>
+            <p className="text-center text-gray-600 mb-8">
+              Drag and drop an image or click to upload. The app will automatically
+              generate descriptive alt text for accessibility.
+            </p>
+            
+            {/* Drag and Drop Area */}
+            <div
+              className={`flex flex-col items-center justify-center p-8 rounded-xl transition-all duration-300 ease-in-out cursor-pointer text-gray-500
+                ${isDragging ? 'bg-[#D6C2C2] border-[#5E0009] border-4' : 'bg-gray-50 border-gray-300 border-2 border-dashed hover:bg-gray-100'}`}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+              onClick={() => document.getElementById('file-input').click()}
+            >
+              <input
+                id="file-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              {image ? (
+                <img src={image} alt="Uploaded preview" className="max-h-64 rounded-lg shadow-md" />
+              ) : (
+                <>
+                  <p className="text-lg font-medium">Drag and drop an image here</p>
+                  <p className="text-sm mt-1">- or -</p>
+                  <p className="text-lg font-medium mt-1 text-[#5E0009]">Click to upload</p>
+                </>
+              )}
+            </div>
+
+            {/* Status and Output Section */}
+            <div className="mt-8">
+              {isLoading && (
+                <div className="flex items-center justify-center text-lg text-white font-semibold space-x-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Generating alt text...</span>
+                </div>
+              )}
+
+              {message && !isLoading && (
+                <div className="bg-[#F3E5E6] text-[#5E0009] p-3 rounded-lg shadow-inner text-sm font-medium">
+                  {message}
+                </div>
+              )}
+
+              {altText && !isLoading && (
+                <div className="mt-4">
+                  <div className="relative p-5 bg-[#F3E5E6] rounded-xl shadow-lg border-l-4 border-[#5E0009]">
+                    <p className="text-xl font-bold text-[#5E0009] mb-2">Generated Alt Text:</p>
+                    <p className="text-gray-700 text-base leading-relaxed break-words">{altText}</p>
+                    <button
+                      onClick={copyToClipboard}
+                      className="absolute top-4 right-4 p-2 rounded-full bg-[#5E0009] text-white hover:bg-[#4E0008] transition-colors duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:ring-opacity-75"
+                      title="Copy to Clipboard"
+                    >
+                      <ClipboardIcon />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Reset button to clear the application state */}
+              {(image || altText) && (
+                <div className="mt-6 flex justify-center">
+                  <button
+                    onClick={handleReset}
+                    className="px-6 py-3 bg-[#5E0009] text-white font-bold rounded-full shadow-lg hover:bg-[#4E0008] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:ring-opacity-75"
+                  >
+                    Reset
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const container = document.getElementById('root');
+    const root = ReactDOM.createRoot(container);
+    root.render(React.createElement(App));
+  </script>
 </body>
 </html>
