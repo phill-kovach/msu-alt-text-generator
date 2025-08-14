@@ -42,7 +42,7 @@
        transpile the JSX code into regular JavaScript that the browser can understand.
   -->
   <script type="text/babel">
-    const { useState } = React;
+    const { useState, useEffect } = React;
     const ClipboardIcon = () => (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -66,7 +66,30 @@
       const [isLoading, setIsLoading] = useState(false);
       const [isDragging, setIsDragging] = useState(false);
       const [message, setMessage] = useState('');
-      const [apiKey, setApiKey] = useState('');
+      
+      // Use a function to initialize the state from local storage
+      const [apiKey, setApiKey] = useState(() => {
+        try {
+          const storedKey = localStorage.getItem('apiKey');
+          return storedKey || '';
+        } catch (error) {
+          console.error("Error accessing localStorage:", error);
+          return '';
+        }
+      });
+
+      // Use useEffect to save the API key to local storage whenever it changes
+      useEffect(() => {
+        try {
+          if (apiKey) {
+            localStorage.setItem('apiKey', apiKey);
+          } else {
+            localStorage.removeItem('apiKey');
+          }
+        } catch (error) {
+          console.error("Error saving to localStorage:", error);
+        }
+      }, [apiKey]);
 
       const handleDrop = (e) => {
         e.preventDefault();
@@ -231,7 +254,7 @@
                 Enter your Google API Key
               </label>
               <input
-                type="text"
+                type="password"
                 id="api-key"
                 className="w-full p-2 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-[#5E0009] text-gray-900"
                 placeholder="Paste your API key here..."
