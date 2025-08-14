@@ -66,8 +66,8 @@
       const [isLoading, setIsLoading] = useState(false);
       const [isDragging, setIsDragging] = useState(false);
       const [message, setMessage] = useState('');
+      const [showApiKeyInput, setShowApiKeyInput] = useState(true);
       
-      // Use a function to initialize the state from local storage
       const [apiKey, setApiKey] = useState(() => {
         try {
           const storedKey = localStorage.getItem('apiKey');
@@ -77,20 +77,28 @@
           return '';
         }
       });
-
-      // Use useEffect to save the API key to local storage whenever it changes
+      
       useEffect(() => {
-        try {
-          if (apiKey) {
-            localStorage.setItem('apiKey', apiKey);
-          } else {
-            localStorage.removeItem('apiKey');
-          }
-        } catch (error) {
-          console.error("Error saving to localStorage:", error);
+        if (apiKey) {
+          setShowApiKeyInput(false);
         }
-      }, [apiKey]);
+      }, []);
 
+      const saveApiKey = () => {
+        if (apiKey) {
+          try {
+            localStorage.setItem('apiKey', apiKey);
+            setShowApiKeyInput(false);
+            setMessage('API Key saved successfully!');
+          } catch (error) {
+            console.error("Error saving to localStorage:", error);
+            setMessage('Error saving API Key. Please try again.');
+          }
+        } else {
+          setMessage('Please enter a valid API Key.');
+        }
+      };
+      
       const handleDrop = (e) => {
         e.preventDefault();
         setIsDragging(false);
@@ -222,6 +230,18 @@
           setMessage('Alt text copied to clipboard!');
         }
       };
+      
+      const clearApiKey = () => {
+        try {
+          localStorage.removeItem('apiKey');
+          setApiKey('');
+          setShowApiKeyInput(true);
+          handleReset();
+        } catch (error) {
+          console.error("Error clearing localStorage:", error);
+          setMessage('Error clearing API Key. Please try again.');
+        }
+      };
 
       const handleReset = () => {
         setImage(null);
@@ -249,90 +269,106 @@
               generate descriptive alt text for accessibility.
             </p>
             
-            <div className="mb-6">
-              <label htmlFor="api-key" className="block text-gray-800 font-bold mb-2">
-                Enter your Google API Key
-              </label>
-              <input
-                type="password"
-                id="api-key"
-                className="w-full p-2 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-[#5E0009] text-gray-900"
-                placeholder="Paste your API key here..."
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-              />
-            </div>
-            
-            {/* Drag and Drop Area */}
-            <div
-              className={`flex flex-col items-center justify-center p-8 rounded-xl transition-all duration-300 ease-in-out cursor-pointer text-gray-500
-                ${isDragging ? 'bg-[#D6C2C2] border-[#5E0009] border-4' : 'bg-gray-50 border-gray-300 border-2 border-dashed hover:bg-gray-100'}`}
-              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={handleDrop}
-              onClick={() => document.getElementById('file-input').click()}
-            >
-              <input
-                id="file-input"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              {image ? (
-                <img src={image} alt="Uploaded preview" className="max-h-64 rounded-lg shadow-md" />
-              ) : (
-                <>
-                  <p className="text-lg font-medium">Drag and drop an image here</p>
-                  <p className="text-sm mt-1">- or -</p>
-                  <p className="text-lg font-medium mt-1 text-[#5E0009]">Click to upload</p>
-                </>
-              )}
-            </div>
-
-            {/* Status and Output Section */}
-            <div className="mt-8">
-              {isLoading && (
-                <div className="flex items-center justify-center text-lg text-[#5E0009] font-semibold space-x-2">
-                  <div className="w-5 h-5 border-2 border-[#5E0009] border-t-transparent rounded-full animate-spin"></div>
-                  <span>Generating alt text...</span>
+            {showApiKeyInput ? (
+              <div className="mb-6">
+                <label htmlFor="api-key" className="block text-gray-800 font-bold mb-2">
+                  Enter your Google API Key
+                </label>
+                <input
+                  type="password"
+                  id="api-key"
+                  className="w-full p-2 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-[#5E0009] text-gray-900"
+                  placeholder="Paste your API key here..."
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                />
+                <button
+                  onClick={saveApiKey}
+                  className="mt-4 w-full px-6 py-3 bg-[#5E0009] text-white font-bold rounded-lg shadow-lg hover:bg-[#4E0008] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:ring-opacity-75"
+                >
+                  Save API Key
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Drag and Drop Area */}
+                <div
+                  className={`flex flex-col items-center justify-center p-8 rounded-xl transition-all duration-300 ease-in-out cursor-pointer text-gray-500
+                    ${isDragging ? 'bg-[#D6C2C2] border-[#5E0009] border-4' : 'bg-gray-50 border-gray-300 border-2 border-dashed hover:bg-gray-100'}`}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  onClick={() => document.getElementById('file-input').click()}
+                >
+                  <input
+                    id="file-input"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                  {image ? (
+                    <img src={image} alt="Uploaded preview" className="max-h-64 rounded-lg shadow-md" />
+                  ) : (
+                    <>
+                      <p className="text-lg font-medium">Drag and drop an image here</p>
+                      <p className="text-sm mt-1">- or -</p>
+                      <p className="text-lg font-medium mt-1 text-[#5E0009]">Click to upload</p>
+                    </>
+                  )}
                 </div>
-              )}
 
-              {message && !isLoading && (
-                <div className="bg-[#F3E5E6] text-[#5E0009] p-3 rounded-lg shadow-inner text-sm font-medium">
-                  {message}
-                </div>
-              )}
+                {/* Status and Output Section */}
+                <div className="mt-8">
+                  {isLoading && (
+                    <div className="flex items-center justify-center text-lg text-[#5E0009] font-semibold space-x-2">
+                      <div className="w-5 h-5 border-2 border-[#5E0009] border-t-transparent rounded-full animate-spin"></div>
+                      <span>Generating alt text...</span>
+                    </div>
+                  )}
 
-              {altText && !isLoading && (
-                <div className="mt-4">
-                  <div className="relative p-5 bg-[#F3E5E6] rounded-xl shadow-lg border-l-4 border-[#5E0009]">
-                    <p className="text-xl font-bold text-[#5E0009] mb-2">Generated Alt Text:</p>
-                    <p className="text-gray-700 text-base leading-relaxed break-words">{altText}</p>
-                    <button
-                      onClick={copyToClipboard}
-                      className="absolute top-4 right-4 p-2 rounded-full bg-[#5E0009] text-white hover:bg-[#4E0008] transition-colors duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:ring-opacity-75"
-                      title="Copy to Clipboard"
-                    >
-                      <ClipboardIcon />
-                    </button>
-                  </div>
-                </div>
-              )}
+                  {message && !isLoading && (
+                    <div className="bg-[#F3E5E6] text-[#5E0009] p-3 rounded-lg shadow-inner text-sm font-medium">
+                      {message}
+                    </div>
+                  )}
 
-              {/* Reset button to clear the application state */}
-              {(image || altText) && (
-                <div className="mt-6 flex justify-center">
-                  <button
-                    onClick={handleReset}
-                    className="px-6 py-3 bg-[#5E0009] text-white font-bold rounded-full shadow-lg hover:bg-[#4E0008] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:ring-opacity-75"
-                  >
-                    Reset
-                  </button>
+                  {altText && !isLoading && (
+                    <div className="mt-4">
+                      <div className="relative p-5 bg-[#F3E5E6] rounded-xl shadow-lg border-l-4 border-[#5E0009]">
+                        <p className="text-xl font-bold text-[#5E0009] mb-2">Generated Alt Text:</p>
+                        <p className="text-gray-700 text-base leading-relaxed break-words">{altText}</p>
+                        <button
+                          onClick={copyToClipboard}
+                          className="absolute top-4 right-4 p-2 rounded-full bg-[#5E0009] text-white hover:bg-[#4E0008] transition-colors duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:ring-opacity-75"
+                          title="Copy to Clipboard"
+                        >
+                          <ClipboardIcon />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Reset and Clear Key buttons */}
+                  {(image || altText) && (
+                    <div className="mt-6 flex justify-center space-x-4">
+                      <button
+                        onClick={handleReset}
+                        className="px-6 py-3 bg-[#5E0009] text-white font-bold rounded-full shadow-lg hover:bg-[#4E0008] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:ring-opacity-75"
+                      >
+                        Reset
+                      </button>
+                      <button
+                        onClick={clearApiKey}
+                        className="px-6 py-3 border-2 border-[#5E0009] text-[#5E0009] font-bold rounded-full shadow-lg hover:bg-[#F3E5E6] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:ring-opacity-75"
+                      >
+                        Clear API Key
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
       );
