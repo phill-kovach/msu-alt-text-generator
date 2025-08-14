@@ -66,6 +66,7 @@
       const [isLoading, setIsLoading] = useState(false);
       const [isDragging, setIsDragging] = useState(false);
       const [message, setMessage] = useState('');
+      const [apiKey, setApiKey] = useState('');
 
       const handleDrop = (e) => {
         e.preventDefault();
@@ -103,6 +104,11 @@
       };
 
       const generateAltText = async (base64Data, mimeType) => {
+        if (!apiKey) {
+          setMessage('Please enter a valid API Key to use this feature.');
+          return;
+        }
+
         setIsLoading(true);
         setMessage('Analyzing image...');
 
@@ -125,7 +131,6 @@
             ],
           };
 
-          const apiKey = "";
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
           let response = null;
@@ -221,6 +226,20 @@
               generate descriptive alt text for accessibility.
             </p>
             
+            <div className="mb-6">
+              <label htmlFor="api-key" className="block text-gray-800 font-bold mb-2">
+                Enter your Google API Key
+              </label>
+              <input
+                type="text"
+                id="api-key"
+                className="w-full p-2 rounded-lg border-2 border-gray-300 focus:outline-none focus:border-[#5E0009] text-gray-900"
+                placeholder="Paste your API key here..."
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+              />
+            </div>
+            
             {/* Drag and Drop Area */}
             <div
               className={`flex flex-col items-center justify-center p-8 rounded-xl transition-all duration-300 ease-in-out cursor-pointer text-gray-500
@@ -251,8 +270,8 @@
             {/* Status and Output Section */}
             <div className="mt-8">
               {isLoading && (
-                <div className="flex items-center justify-center text-lg text-white font-semibold space-x-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="flex items-center justify-center text-lg text-[#5E0009] font-semibold space-x-2">
+                  <div className="w-5 h-5 border-2 border-[#5E0009] border-t-transparent rounded-full animate-spin"></div>
                   <span>Generating alt text...</span>
                 </div>
               )}
