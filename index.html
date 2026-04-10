@@ -137,7 +137,9 @@
         setMessage('Analyzing image...');
 
         try {
-          const prompt = "Describe this image in a concise and detailed manner for alt text purposes. Focus on key visual elements, colors, and the subject matter. Start directly with the description without any introductory phrases like 'The image shows...'";
+          // ADDED: The 250 character limit instruction to the prompt
+          const prompt = "Describe this image in a concise and detailed manner for alt text purposes. Focus on key visual elements, colors, and the subject matter. Start directly with the description without any introductory phrases like 'The image shows...'. STRICT REQUIREMENT: Your entire response must be 250 characters or less.";
+          
           const payload = {
             contents: [
               {
@@ -155,7 +157,6 @@
             ],
           };
 
-          // FIXED: Changed gemini-2.5-flash to gemini-2.0-flash
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
           let response = null;
