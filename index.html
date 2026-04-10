@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Missouri State Alt Text Generator</title>
   
-  <!-- The manifest.json links to the app's PWA settings and icons -->
   <link rel="manifest" href="/manifest.json" />
   
-  <!-- The service worker enables offline functionality -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -23,7 +21,6 @@
     }
   </script>
 
-  <!-- Tailwind CSS and React/ReactDOM from CDN for simplicity -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -37,10 +34,6 @@
 <body class="bg-[#5E0009]">
   <div id="root"></div>
 
-  <!-- The script tag below contains the entire React application logic.
-       The "text/babel" type tells the browser to use the Babel library to
-       transpile the JSX code into regular JavaScript that the browser can understand.
-  -->
   <script type="text/babel">
     const { useState, useEffect } = React;
     const ClipboardIcon = () => (
@@ -162,7 +155,8 @@
             ],
           };
 
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+          // FIXED: Changed gemini-2.5-flash to gemini-2.0-flash
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
           let response = null;
           let delay = 1000;
@@ -380,4 +374,3 @@
   </script>
 </body>
 </html>
-
