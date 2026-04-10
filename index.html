@@ -137,7 +137,6 @@
         setMessage('Analyzing image...');
 
         try {
-          // ADDED: The 250 character limit instruction to the prompt
           const prompt = "Describe this image in a concise and detailed manner for alt text purposes. Focus on key visual elements, colors, and the subject matter. Start directly with the description without any introductory phrases like 'The image shows...'. STRICT REQUIREMENT: Your entire response must be 250 characters or less.";
           
           const payload = {
@@ -157,7 +156,8 @@
             ],
           };
 
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+          // Switched back to the highly stable gemini-1.5-flash
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
           let response = null;
           let delay = 1000;
@@ -198,13 +198,25 @@
           }
 
           const result = await response.json();
+          
+          // Log the raw result to the browser console so we can see exactly what Gemini is saying
+          console.log("Raw Gemini API Response:", result);
+
+          // Check if the API blocked the response due to safety filters
+          const finishReason = result?.candidates?.[0]?.finishReason;
+          if (finishReason === 'SAFETY' || finishReason === 'BLOCKLIST') {
+             setMessage('The image was blocked by Google\'s safety filters. Please try a different image.');
+             setIsLoading(false);
+             return;
+          }
+
           const generatedText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
 
           if (generatedText) {
             setAltText(generatedText);
             setMessage('Alt text generated successfully!');
           } else {
-            setMessage('Could not generate alt text. Please try a different image.');
+            setMessage('Could not generate alt text. Check the browser console (Right Click -> Inspect -> Console) for details.');
           }
         } catch (error) {
           console.error('Error generating alt text:', error);
