@@ -156,8 +156,8 @@
             ],
           };
 
-          // Switched to the active gemini-2.0-flash model
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+          // Using the current active free-tier compatible model
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
           let response = null;
           let delay = 1000;
@@ -173,29 +173,23 @@
               });
 
               if (!response.ok) {
-                // Parse the exact error from Google if possible
                 const errorData = await response.json().catch(() => ({}));
                 const errorMessage = errorData?.error?.message || response.statusText;
 
-                // If it's a rate limit (429) or Server Error (500+), throw to trigger a retry
                 if (response.status === 429 || response.status >= 500) {
-                   // ENHANCED DEBUGGING: Print the exact reason to the console
                    console.error(`Exact API Error (${response.status}):`, errorMessage);
                    throw new Error(`Retryable status: ${response.status} - ${errorMessage}`);
                 }
                 
-                // If it's a 400 Bad Request or 403 Forbidden, do NOT retry. Bubble up the exact error.
                 let fatalError = new Error(`API Error ${response.status}: ${errorMessage}`);
                 fatalError.isFatal = true; 
                 throw fatalError;
               }
-              break; // Success! Break out of the retry loop.
+              break; 
             } catch (error) {
-              // If it's a permanent error (like a bad API key), throw it immediately
               if (error.isFatal) {
                 throw error; 
               }
-              
               retries++;
               if (retries >= maxRetries) {
                 throw error;
@@ -210,11 +204,8 @@
           }
 
           const result = await response.json();
-          
-          // Log the raw result to the browser console so we can see exactly what Gemini is saying
           console.log("Raw Gemini API Response:", result);
 
-          // Check if the API blocked the response due to safety filters
           const finishReason = result?.candidates?.[0]?.finishReason;
           if (finishReason === 'SAFETY' || finishReason === 'BLOCKLIST') {
              setMessage('The image was blocked by Google\'s safety filters. Please try a different image.');
@@ -232,7 +223,6 @@
           }
         } catch (error) {
           console.error('Error generating alt text:', error);
-          // Show the actual error message to the user in the UI
           setMessage(`Error: ${error.message || 'Check the console for details.'}`);
         } finally {
           setIsLoading(false);
@@ -360,43 +350,4 @@
                         <p className="text-gray-700 text-base leading-relaxed break-words">{altText}</p>
                         <button
                           onClick={copyToClipboard}
-                          className="absolute top-4 right-4 p-2 rounded-full bg-[#5E0009] text-white hover:bg-[#4E0008] transition-colors duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:ring-opacity-75"
-                          title="Copy to Clipboard"
-                        >
-                          <ClipboardIcon />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Reset and Clear Key buttons */}
-                  {(image || altText) && (
-                    <div className="mt-6 flex justify-center space-x-4">
-                      <button
-                        onClick={handleReset}
-                        className="px-6 py-3 bg-[#5E0009] text-white font-bold rounded-full shadow-lg hover:bg-[#4E0008] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:ring-opacity-75"
-                      >
-                        Reset
-                      </button>
-                      <button
-                        onClick={clearApiKey}
-                        className="px-6 py-3 border-2 border-[#5E0009] text-[#5E0009] font-bold rounded-full shadow-lg hover:bg-[#F3E5E6] transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#5E0009] focus:ring-opacity-75"
-                      >
-                        Clear API Key
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      );
-    };
-
-    const container = document.getElementById('root');
-    const root = ReactDOM.createRoot(container);
-    root.render(React.createElement(App));
-  </script>
-</body>
-</html>
+                          className="absolute top-4 right-4 p-2 rounded-full
