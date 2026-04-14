@@ -4,22 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Missouri State Alt Text Generator</title>
-  
-  <link rel="manifest" href="/manifest.json" />
-  
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-          .then(registration => {
-            console.log('Service Worker registered with scope:', registration.scope);
-          })
-          .catch(err => {
-            console.log('Service Worker registration failed:', err);
-          });
-      });
-    }
-  </script>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -122,4 +106,39 @@
           generateAltText(base64Data, file.type);
         };
         reader.onerror = () => {
-          setMessage('
+          setMessage('Error reading file. Please try again.');
+        };
+        reader.readAsDataURL(file);
+      };
+
+      const generateAltText = async (base64Data, mimeType) => {
+        if (!apiKey) {
+          setMessage('Please enter a valid API Key to use this feature.');
+          return;
+        }
+
+        setIsLoading(true);
+        setMessage('Analyzing image...');
+
+        try {
+          const prompt = "Describe this image in a concise and detailed manner for alt text purposes. Focus on key visual elements, colors, and the subject matter. Start directly with the description without any introductory phrases like 'The image shows...'. STRICT REQUIREMENT: Your entire response must be 250 characters or less.";
+          
+          const payload = {
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  { text: prompt },
+                  {
+                    inlineData: {
+                      mimeType: mimeType,
+                      data: base64Data
+                    }
+                  }
+                ]
+              }
+            ],
+          };
+
+          // Switched to the active gemini-2.0-flash model
+          const apiUrl = `https://gener
