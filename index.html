@@ -179,7 +179,9 @@
 
                 // If it's a rate limit (429) or Server Error (500+), throw to trigger a retry
                 if (response.status === 429 || response.status >= 500) {
-                   throw new Error(`Retryable status: ${response.status}`);
+                   // ENHANCED DEBUGGING: Print the exact reason to the console
+                   console.error(`Exact API Error (${response.status}):`, errorMessage);
+                   throw new Error(`Retryable status: ${response.status} - ${errorMessage}`);
                 }
                 
                 // If it's a 400 Bad Request or 403 Forbidden, do NOT retry. Bubble up the exact error.
