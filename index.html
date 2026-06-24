@@ -34,13 +34,15 @@
 <body class="bg-[#5E0009]">
   <div id="root"></div>
 
-  <script type="text/babel">
-  /** @jsxRuntime classic */
-  
-  const { useState, useEffect } = React;
-  
-  // ... the rest of your application code ...
-</script>
+  <script>
+    Babel.registerPreset('react-classic', {
+      presets: [
+        ['react', { runtime: 'classic' }]
+      ]
+    });
+  </script>
+
+  <script type="text/babel" data-presets="react-classic">
     const { useState, useEffect } = React;
     const ClipboardIcon = () => (
       <svg
