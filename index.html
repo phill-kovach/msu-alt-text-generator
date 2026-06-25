@@ -34,7 +34,15 @@
 <body class="bg-[#5E0009]">
   <div id="root"></div>
 
-  <script type="text/babel" data-presets="env" data-plugins="transform-react-jsx">
+  <script>
+    Babel.registerPreset('react-classic', {
+      presets: [
+        [Babel.availablePresets.react, { runtime: 'classic' }]
+      ]
+    });
+  </script>
+
+  <script type="text/babel" data-presets="react-classic">
     const { useState, useEffect } = React;
     const ClipboardIcon = () => (
       <svg
